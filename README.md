@@ -1,9 +1,13 @@
 # `@majulii/aurora-sdk`
 
-Small **TypeScript client** for the Aurora SDK **backend** (hosted Cloudflare Worker). Use it from **server-side** code so your **organization API key** and **LLM API key** are never exposed in the browser.
+TypeScript client for the Aurora SDK **backend** (hosted Cloudflare Worker). Use it from **server-side** only so your **organization API key** and **LLM API key** stay secret.
 
-- **Worker URL** is fixed in the package (`AURORA_SDK_DEFAULT_BASE_URL`); only `apiKey` (and optional `fetch` for tests) is passed to `createAuroraClient`.
-- Requires **Node 18+** (or any runtime with global `fetch`).
+- **HTTP:** [axios](https://axios-http.com/) with [axios-retry](https://github.com/softonic/axios-retry) — exponential backoff on network errors, timeouts, **429**, and **5xx** (up to `maxRetries`, default **4**).
+- **Timeouts:** default **120s** per request (LLM-heavy `generate`); shorter overrides for `usage` (30s) and `health` (15s).
+- **Worker URL** is fixed (`AURORA_SDK_DEFAULT_BASE_URL`); pass **`apiKey`** and optional **`maxRetries` / `timeoutMs`**.
+- **`generate()`** supports optional **`attachments`** (images: base64 + MIME or `https` URL; files: `name` + `text`) and **`memoryTokenBudget`** for long threads (see types).
+
+Requires **Node 18+**.
 
 ## Install
 
@@ -18,6 +22,9 @@ import { createAuroraClient } from "@majulii/aurora-sdk";
 
 const sdk = createAuroraClient({
   apiKey: process.env.AURORA_SDK_API_KEY!,
+  // optional tuning:
+  // maxRetries: 6,
+  // timeoutMs: 180_000,
 });
 
 const out = await sdk.generate({
@@ -45,7 +52,11 @@ const out = await sdk.generate({
 | `usage()` | `GET /v1/usage` |
 | `health()` | `GET /health` |
 
-Errors throw `AuroraSdkError` with `status` and `body`.
+Failures throw **`AuroraSdkError`** (`status`, `body`). Network errors after retries use `status === 0`.
+
+### Tests
+
+Pass a custom **`axiosInstance`** (with your own adapter/mocks) via `createAuroraClient({ apiKey: "x", axiosInstance })`; `maxRetries` / `timeoutMs` are ignored in that case.
 
 ## Develop & publish
 
@@ -59,4 +70,4 @@ Update `repository` / `homepage` in `package.json` if your Git remote differs fr
 
 ## Related
 
-- **Backend service** (Worker, D1, R2) is a **separate private repo** — not published on npm. Consumers only need this package.
+- **Backend** (Worker, D1, R2) is a **separate private repo** — not on npm. Consumers only install this package.

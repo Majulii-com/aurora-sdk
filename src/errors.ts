@@ -1,3 +1,5 @@
+import { isAxiosError, type AxiosError } from "axios";
+
 export class AuroraSdkError extends Error {
 	constructor(
 		message: string,
@@ -8,18 +10,25 @@ export class AuroraSdkError extends Error {
 		this.name = "AuroraSdkError";
 	}
 
-	static async fromResponse(res: Response): Promise<AuroraSdkError> {
-		let body: unknown;
-		const text = await res.text();
-		try {
-			body = text ? JSON.parse(text) : null;
-		} catch {
-			body = text;
+	/** Map axios failures (HTTP or network) into a stable SDK error. */
+	static fromAxiosError(err: unknown): AuroraSdkError {
+		if (!isAxiosError(err)) {
+			if (err instanceof Error) return new AuroraSdkError(err.message, 0, null);
+			return new AuroraSdkError(String(err), 0, null);
 		}
-		const msg =
-			typeof body === "object" && body !== null && "error" in body
-				? String((body as { error: unknown }).error)
-				: res.statusText;
-		return new AuroraSdkError(msg || `HTTP ${res.status}`, res.status, body);
+
+		const ax = err as AxiosError<unknown>;
+
+		if (ax.response) {
+			const { status, data } = ax.response;
+			const msg =
+				typeof data === "object" && data !== null && "error" in data
+					? String((data as { error: unknown }).error)
+					: ax.response.statusText || `HTTP ${status}`;
+			return new AuroraSdkError(msg || `HTTP ${status}`, status, data);
+		}
+
+		const code = ax.code ? ` (${ax.code})` : "";
+		return new AuroraSdkError(`${ax.message}${code}`, 0, { code: ax.code });
 	}
 }

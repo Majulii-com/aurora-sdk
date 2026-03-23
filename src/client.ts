@@ -1,63 +1,85 @@
+import type { AxiosInstance } from "axios";
 import { AuroraSdkError } from "./errors.ts";
+import { createAuroraHttpClient, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT_MS } from "./http.ts";
 import type { GenerateRequest, GenerateResponse, UsageResponse } from "./types.ts";
 
-/** Hosted Worker origin — fixed; not configurable via the public client API. */
+/** Default hosted Worker origin when `baseUrl` is omitted. */
 export const AURORA_SDK_DEFAULT_BASE_URL = "https://aurora-sdk-backend.tech-826.workers.dev";
 
-const AURORA_SDK_BASE_URL = AURORA_SDK_DEFAULT_BASE_URL.replace(/\/$/, "");
+function normalizeBaseUrl(url: string): string {
+	return url.replace(/\/$/, "");
+}
 
 export type AuroraClientOptions = {
 	/** Organization SDK API key (from admin / seed). */
 	apiKey: string;
-	/** Optional override for fetch (testing). */
-	fetch?: typeof fetch;
+	/**
+	 * Backend origin (no trailing slash). For local dev: `http://127.0.0.1:8787` after `wrangler dev`.
+	 * Defaults to {@link AURORA_SDK_DEFAULT_BASE_URL}.
+	 */
+	baseUrl?: string;
+	/**
+	 * Max retries for transient failures (network, timeout, 429, 5xx).
+	 * Default {@link DEFAULT_MAX_RETRIES}.
+	 */
+	maxRetries?: number;
+	/**
+	 * Per-request timeout in ms (LLM calls can be slow).
+	 * Default {@link DEFAULT_TIMEOUT_MS}.
+	 */
+	timeoutMs?: number;
+	/**
+	 * Inject a pre-built axios instance (e.g. tests). When set, `maxRetries` / `timeoutMs` are ignored.
+	 */
+	axiosInstance?: AxiosInstance;
 };
+
+export { DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT_MS };
 
 /**
  * Typed client for the Aurora SDK **backend** (Cloudflare Worker).
- * Use this from your **server** (Node, Edge, etc.) so both the org API key and LLM API key stay off public clients.
+ * Uses **axios** with exponential backoff retries on transient errors.
  */
 export class AuroraClient {
-	private readonly baseUrl: string;
-	private readonly apiKey: string;
-	private readonly fetchFn: typeof fetch;
+	private readonly http: AxiosInstance;
 
 	constructor(opts: AuroraClientOptions) {
-		this.baseUrl = AURORA_SDK_BASE_URL;
-		this.apiKey = opts.apiKey;
-		this.fetchFn = opts.fetch ?? globalThis.fetch.bind(globalThis);
-	}
-
-	private headers(): HeadersInit {
-		return {
-			"Content-Type": "application/json",
-			"X-Aurora-Api-Key": this.apiKey,
-		};
+		const baseURL = normalizeBaseUrl(opts.baseUrl ?? AURORA_SDK_DEFAULT_BASE_URL);
+		this.http =
+			opts.axiosInstance ??
+			createAuroraHttpClient(baseURL, opts.apiKey, {
+				maxRetries: opts.maxRetries,
+				timeoutMs: opts.timeoutMs,
+			});
 	}
 
 	async generate(req: GenerateRequest): Promise<GenerateResponse> {
-		const res = await this.fetchFn(`${this.baseUrl}/v1/generate`, {
-			method: "POST",
-			headers: this.headers(),
-			body: JSON.stringify(req),
-		});
-		if (!res.ok) throw await AuroraSdkError.fromResponse(res);
-		return (await res.json()) as GenerateResponse;
+		try {
+			const res = await this.http.post<GenerateResponse>("/v1/generate", req);
+			return res.data;
+		} catch (e) {
+			throw AuroraSdkError.fromAxiosError(e);
+		}
 	}
 
 	async usage(): Promise<UsageResponse> {
-		const res = await this.fetchFn(`${this.baseUrl}/v1/usage`, {
-			method: "GET",
-			headers: this.headers(),
-		});
-		if (!res.ok) throw await AuroraSdkError.fromResponse(res);
-		return (await res.json()) as UsageResponse;
+		try {
+			const res = await this.http.get<UsageResponse>("/v1/usage", { timeout: 30_000 });
+			return res.data;
+		} catch (e) {
+			throw AuroraSdkError.fromAxiosError(e);
+		}
 	}
 
 	async health(): Promise<{ status: string; service: string }> {
-		const res = await this.fetchFn(`${this.baseUrl}/health`, { method: "GET" });
-		if (!res.ok) throw await AuroraSdkError.fromResponse(res);
-		return (await res.json()) as { status: string; service: string };
+		try {
+			const res = await this.http.get<{ status: string; service: string }>("/health", {
+				timeout: 15_000,
+			});
+			return res.data;
+		} catch (e) {
+			throw AuroraSdkError.fromAxiosError(e);
+		}
 	}
 }
 

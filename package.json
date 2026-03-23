@@ -9,10 +9,18 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./node": {
+			"types": "./dist/node.d.ts",
+			"import": "./dist/node.js"
 		}
 	},
 	"files": ["dist"],
 	"sideEffects": false,
+	"dependencies": {
+		"axios": "^1.7.9",
+		"axios-retry": "^4.5.0"
+	},
 	"engines": {
 		"node": ">=18"
 	},
@@ -21,6 +29,7 @@
 		"prepublishOnly": "npm run build"
 	},
 	"devDependencies": {
+		"@types/node": "^22.13.10",
 		"typescript": "^5.9.3"
 	},
 	"keywords": ["aurora", "dsl", "gen-ui", "cloudflare-workers", "majulii"],
