@@ -1,0 +1,36 @@
+{
+	"name": "@majulii/aurora-sdk",
+	"version": "0.1.0",
+	"description": "Official TypeScript client for Aurora SDK backend — Gen DSL generation (org API key + LLM via hosted Worker).",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": ["dist"],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=18"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"prepublishOnly": "npm run build"
+	},
+	"devDependencies": {
+		"typescript": "^5.9.3"
+	},
+	"keywords": ["aurora", "dsl", "gen-ui", "cloudflare-workers", "majulii"],
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/majulii/aurora-sdk.git"
+	},
+	"bugs": {
+		"url": "https://github.com/majulii/aurora-sdk/issues"
+	},
+	"homepage": "https://github.com/majulii/aurora-sdk#readme"
+}
