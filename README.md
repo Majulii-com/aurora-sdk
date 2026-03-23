@@ -2,7 +2,7 @@
 
 Small **TypeScript client** for the Aurora SDK **backend** (hosted Cloudflare Worker). Use it from **server-side** code so your **organization API key** and **LLM API key** are never exposed in the browser.
 
-- **Default base URL** is baked in (`AURORA_SDK_DEFAULT_BASE_URL`); you normally only pass `apiKey`.
+- **Worker URL** is fixed in the package (`AURORA_SDK_DEFAULT_BASE_URL`); only `apiKey` (and optional `fetch` for tests) is passed to `createAuroraClient`.
 - Requires **Node 18+** (or any runtime with global `fetch`).
 
 ## Install
@@ -35,15 +35,6 @@ const out = await sdk.generate({
 });
 
 // out.document — GenUIDocument for @majulii/aurora-ui
-```
-
-### Local / staging Worker
-
-```ts
-createAuroraClient({
-  apiKey: "…",
-  baseUrl: "http://127.0.0.1:8787",
-});
 ```
 
 ### API

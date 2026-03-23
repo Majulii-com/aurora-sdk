@@ -1,31 +1,17 @@
 import { AuroraSdkError } from "./errors.ts";
 import type { GenerateRequest, GenerateResponse, UsageResponse } from "./types.ts";
 
-/** Production Worker — consuming apps usually omit `baseUrl` and only pass `apiKey`. */
+/** Hosted Worker origin — fixed; not configurable via the public client API. */
 export const AURORA_SDK_DEFAULT_BASE_URL = "https://aurora-sdk-backend.tech-826.workers.dev";
 
+const AURORA_SDK_BASE_URL = AURORA_SDK_DEFAULT_BASE_URL.replace(/\/$/, "");
+
 export type AuroraClientOptions = {
-	/**
-	 * Override Worker origin (local wrangler, staging, or custom domain).
-	 * If omitted, uses {@link AURORA_SDK_DEFAULT_BASE_URL}.
-	 */
-	baseUrl?: string;
 	/** Organization SDK API key (from admin / seed). */
 	apiKey: string;
 	/** Optional override for fetch (testing). */
 	fetch?: typeof fetch;
 };
-
-function normalizeBaseUrl(url: string): string {
-	return url.replace(/\/$/, "");
-}
-
-function resolveBaseUrl(explicit?: string): string {
-	if (explicit?.trim()) {
-		return normalizeBaseUrl(explicit.trim());
-	}
-	return normalizeBaseUrl(AURORA_SDK_DEFAULT_BASE_URL);
-}
 
 /**
  * Typed client for the Aurora SDK **backend** (Cloudflare Worker).
@@ -37,7 +23,7 @@ export class AuroraClient {
 	private readonly fetchFn: typeof fetch;
 
 	constructor(opts: AuroraClientOptions) {
-		this.baseUrl = resolveBaseUrl(opts.baseUrl);
+		this.baseUrl = AURORA_SDK_BASE_URL;
 		this.apiKey = opts.apiKey;
 		this.fetchFn = opts.fetch ?? globalThis.fetch.bind(globalThis);
 	}
