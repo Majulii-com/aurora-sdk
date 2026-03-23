@@ -7,9 +7,18 @@ export type LlmCredentials = {
 	model?: string;
 };
 
+/** Routes the host exposes; pass in `context.apiEndpoints` so the model wires `API_CALL` to real paths. */
+export type ApiEndpointRef = {
+	id?: string;
+	method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+	path: string;
+	description?: string;
+};
+
 export type GenerateContext = {
 	appData?: unknown;
 	hints?: string;
+	apiEndpoints?: ApiEndpointRef[];
 };
 
 /** Image as raw base64 (no `data:` prefix) + MIME type. */
@@ -62,11 +71,17 @@ export type GenerateRequest = {
 	memoryTokenBudget?: number;
 };
 
+export type DocumentValidation =
+	| { validDsl: true; apiPathWarnings?: string[] }
+	| { validDsl: false; zodIssues: string[] };
+
 export type GenerateResponse = {
 	content: string;
 	schema?: Record<string, unknown>;
 	initialState?: Record<string, unknown>;
 	document?: Record<string, unknown>;
+	/** Present when the model returned a `document` shape (even if stripped for invalid DSL). */
+	documentValidation?: DocumentValidation;
 	threadId: string;
 };
 

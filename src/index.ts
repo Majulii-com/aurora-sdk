@@ -8,8 +8,10 @@ export {
 } from "./client.ts";
 export { AuroraSdkError } from "./errors.ts";
 export type {
+	ApiEndpointRef,
 	FileAttachmentBinary,
 	FileAttachmentText,
+	DocumentValidation,
 	GenerateAttachment,
 	GenerateContext,
 	GenerateRequest,
