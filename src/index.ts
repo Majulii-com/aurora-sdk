@@ -6,6 +6,7 @@ export {
 	DEFAULT_TIMEOUT_MS,
 	type AuroraClientOptions,
 } from "./client.ts";
+export type { AuroraHttpAuthHeader } from "./http.ts";
 export { AuroraSdkError } from "./errors.ts";
 export type {
 	ApiEndpointRef,

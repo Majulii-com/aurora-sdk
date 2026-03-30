@@ -10,23 +10,31 @@ function isTransientStatus(status: number | undefined): boolean {
 	return status >= 500 && status <= 504;
 }
 
+export type AuroraHttpAuthHeader = "X-Aurora-Api-Key" | "X-Majulii-Api-Key";
+
 /**
  * Shared axios instance: JSON, auth header, timeouts, exponential backoff retries.
  */
 export function createAuroraHttpClient(
 	baseURL: string,
 	apiKey: string,
-	opts?: { maxRetries?: number; timeoutMs?: number },
+	opts?: {
+		maxRetries?: number;
+		timeoutMs?: number;
+		/** Default `X-Aurora-Api-Key` (Cloudflare Worker). Use `X-Majulii-Api-Key` for `majulii-sdk-backend`. */
+		authHeader?: AuroraHttpAuthHeader;
+	},
 ): AxiosInstance {
 	const timeout = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 	const maxRetries = opts?.maxRetries ?? DEFAULT_MAX_RETRIES;
+	const authHeader = opts?.authHeader ?? "X-Aurora-Api-Key";
 
 	const client = axios.create({
 		baseURL,
 		timeout,
 		headers: {
 			"Content-Type": "application/json",
-			"X-Aurora-Api-Key": apiKey,
+			[authHeader]: apiKey,
 		},
 	});
 

@@ -1,6 +1,11 @@
 import type { AxiosInstance } from "axios";
 import { AuroraSdkError } from "./errors.ts";
-import { createAuroraHttpClient, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT_MS } from "./http.ts";
+import {
+	createAuroraHttpClient,
+	type AuroraHttpAuthHeader,
+	DEFAULT_MAX_RETRIES,
+	DEFAULT_TIMEOUT_MS,
+} from "./http.ts";
 import type { GenerateRequest, GenerateResponse, UsageResponse } from "./types.ts";
 
 /** Default hosted Worker origin when `baseUrl` is omitted. */
@@ -32,6 +37,11 @@ export type AuroraClientOptions = {
 	 * Inject a pre-built axios instance (e.g. tests). When set, `maxRetries` / `timeoutMs` are ignored.
 	 */
 	axiosInstance?: AxiosInstance;
+	/**
+	 * API key header name. Use **`X-Majulii-Api-Key`** when `baseUrl` points at **majulii-sdk-backend** (Nest).
+	 * Default **`X-Aurora-Api-Key`** for the hosted Cloudflare Worker.
+	 */
+	authHeader?: AuroraHttpAuthHeader;
 };
 
 export { DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT_MS };
@@ -50,6 +60,7 @@ export class AuroraClient {
 			createAuroraHttpClient(baseURL, opts.apiKey, {
 				maxRetries: opts.maxRetries,
 				timeoutMs: opts.timeoutMs,
+				authHeader: opts.authHeader,
 			});
 	}
 

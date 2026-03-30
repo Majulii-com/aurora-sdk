@@ -1,6 +1,9 @@
 # `@majulii/aurora-sdk`
 
-TypeScript client for the Aurora SDK **backend** (hosted Cloudflare Worker). Use it from **server-side** only so your **organization API key** and **LLM API key** stay secret.
+TypeScript client for the **Aurora / Majulii SDK backend**. Use it from **server-side** only so your **organization API key** and **LLM API key** stay secret.
+
+- **Default backend:** hosted **Cloudflare Worker** (`AURORA_SDK_DEFAULT_BASE_URL`).
+- **Also works with** **`majulii-sdk-backend`** (NestJS): set **`baseUrl`** to your gateway origin and **`authHeader: "X-Majulii-Api-Key"`** (same org API key value the gateway issued). The gateway must have **`DSL_KB_DIR`** pointing at **`aurora-ui/dsl-kb`** for `generate()`.
 
 - **HTTP:** [axios](https://axios-http.com/) with [axios-retry](https://github.com/softonic/axios-retry) — exponential backoff on network errors, timeouts, **429**, and **5xx** (up to `maxRetries`, default **4**).
 - **Timeouts:** default **120s** per request (LLM-heavy `generate`); shorter overrides for `usage` (30s) and `health` (15s).
@@ -43,6 +46,18 @@ const out = await sdk.generate({
 
 // out.document — GenUIDocument for @majulii/aurora-ui
 ```
+
+### Majulii API gateway (local or self-hosted)
+
+```ts
+const sdk = createAuroraClient({
+  apiKey: process.env.MAJULII_SDK_API_KEY!,
+  baseUrl: "http://127.0.0.1:3000",
+  authHeader: "X-Majulii-Api-Key",
+});
+```
+
+You can still send **`X-Aurora-Api-Key`** from raw HTTP; the gateway accepts it as an alias for the same key.
 
 ### API
 
